@@ -169,7 +169,7 @@ export class EcsCdkStack extends cdk.Stack {
       owner: 'nrahi',
       repo: 'amazon-ecs-fargate-cdk-cicd',
       branch: 'main',
-      oauthToken: cdk.SecretValue.secretsManager("/my/github/token"),
+      oauthToken: cdk.SecretValue.secretsManager("/nirmal/github/token"),
       //oauthToken: cdk.SecretValue.plainText('<plain-text>'),
       output: sourceOutput
     });
