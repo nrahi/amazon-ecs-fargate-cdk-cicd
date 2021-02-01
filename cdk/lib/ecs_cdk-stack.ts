@@ -76,9 +76,9 @@ export class EcsCdkStack extends GateUParentStack {
 
     const scaling = fargateService.service.autoScaleTaskCount({ maxCapacity: 3 });
     scaling.scaleOnCpuUtilization('CpuScaling', {
-      targetUtilizationPercent: 10,
-      scaleInCooldown: cdk.Duration.seconds(60),
-      scaleOutCooldown: cdk.Duration.seconds(60)
+      targetUtilizationPercent: 60,
+      scaleInCooldown: cdk.Duration.seconds(300),
+      scaleOutCooldown: cdk.Duration.seconds(300)
     });
 
 
@@ -106,6 +106,12 @@ export class EcsCdkStack extends GateUParentStack {
         privileged: true
       },
       environmentVariables: {
+        'REGION': {
+          value: `${props.env?.region}`
+        },
+        'ACCOUNT': {
+          value: `${props.env?.account}`
+        },
         'CLUSTER_NAME': {
           value: `${cluster.clusterName}`
         },
@@ -126,7 +132,7 @@ export class EcsCdkStack extends GateUParentStack {
             commands: [
               'cd flask-docker-app',
               `docker build -t $ECR_REPO_URI:$TAG .`,
-              '$(aws ecr get-login --no-include-email)',
+              'aws ecr get-login-password --region $REGION| docker login --username AWS --password-stdin $ACCOUNT.dkr.ecr.$REGION.amazonaws.com',
               'docker push $ECR_REPO_URI:$TAG'
             ]
           },
