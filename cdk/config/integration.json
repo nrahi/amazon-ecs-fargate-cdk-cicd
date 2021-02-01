@@ -1,0 +1,20 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	
+	"env": {
+		"account":  "608380362190",
+		"region":   "us-east-1"
+	},
+
+	"env_tags": [
+		{"key":	"Environment", "value": "Integration"},
+		{"key":	"Schedule", "value": "12-hours-est"},
+		{"key":	"ScheduleMessage", "value": "none"}
+	],
+
+	"vpcAttributes": {
+		"vpcId":				"vpc-03bd5f8f0fcba1e34",
+		"availabilityZones":	["us-east-1a, us-east-1b"],
+		"privateSubnetIds":		["subnet-0aa659632f4c2af1d", "subnet-0c6dcd403b13427ef"]
+	}
+}

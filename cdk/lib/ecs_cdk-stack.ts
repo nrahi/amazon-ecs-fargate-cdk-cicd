@@ -5,31 +5,23 @@ import ecs = require("@aws-cdk/aws-ecs");
 import ecs_patterns = require("@aws-cdk/aws-ecs-patterns");
 import iam = require("@aws-cdk/aws-iam");
 import codebuild = require('@aws-cdk/aws-codebuild');
-import codecommit = require('@aws-cdk/aws-codecommit');
-import targets = require('@aws-cdk/aws-events-targets');
-import codedeploy = require('@aws-cdk/aws-codedeploy');
 import codepipeline = require('@aws-cdk/aws-codepipeline');
 import codepipeline_actions = require('@aws-cdk/aws-codepipeline-actions');
+import { GateUParentStack, GateUParentStackProps } from "./common/gateu-parent-stack";
 
-export class EcsCdkStack extends cdk.Stack {
-  constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
+export interface EcsCdkStackProps extends GateUParentStackProps {
+}
+
+export class EcsCdkStack extends GateUParentStack {
+  constructor(scope: cdk.Construct, id: string, props: EcsCdkStackProps) {
     super(scope, id, props);
-
-    /**
-     * Create a new VPC with single NAT Gateway
-     */
-    const vpc = new ec2.Vpc(this, 'ecs-cdk-vpc', {
-      cidr: '10.0.0.0/16',
-      natGateways: 1,
-      maxAzs: 3
-    });
 
     const clusterAdmin = new iam.Role(this, 'AdminRole', {
       assumedBy: new iam.AccountRootPrincipal()
     });
 
     const cluster = new ecs.Cluster(this, "ecs-cluster", {
-      vpc: vpc,
+      vpc: this.vpc,
     });
 
     const logging = new ecs.AwsLogDriver({
@@ -79,12 +71,10 @@ export class EcsCdkStack extends cdk.Stack {
     const fargateService = new ecs_patterns.ApplicationLoadBalancedFargateService(this, "ecs-service", {
       cluster: cluster,
       taskDefinition: taskDef,
-      publicLoadBalancer: true,
-      desiredCount: 3,
-      listenerPort: 80
+      publicLoadBalancer: false
     });
 
-    const scaling = fargateService.service.autoScaleTaskCount({ maxCapacity: 6 });
+    const scaling = fargateService.service.autoScaleTaskCount({ maxCapacity: 3 });
     scaling.scaleOnCpuUtilization('CpuScaling', {
       targetUtilizationPercent: 10,
       scaleInCooldown: cdk.Duration.seconds(60),

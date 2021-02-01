@@ -1,0 +1,13 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+
+	"global_tags": [
+		{"key":	"JPA", 		"value": "SSD/RCO"},
+		{"key":	"Program",	"value": "Shared Services"}
+	],
+
+	"name_tag": {
+		"key":			"Name",
+		"value_prefix":	"sonar-"
+	}
+}
