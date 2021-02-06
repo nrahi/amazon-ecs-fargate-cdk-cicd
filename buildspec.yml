@@ -22,7 +22,7 @@ phases:
   post_build:
     commands:
       - echo In post_build stage
-      - cd..
+      - cd ..
       - printf '[{\"name\":\"flask-app\",\"imageUri\":\"%s\"}]' $FLASK_REPO_URI:$TAG > imagedefinitions.json
       - pwd; ls -al; cat imagedefinitions.json
 artifacts:
