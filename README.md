@@ -101,8 +101,11 @@ cd amazon-ecs-cdk-cicd/cdk
 
 ```bash
 cd cdk
-cdk init
-npm install
+sudo npm install -g aws-cdk
+cdk --version
+npx npm-check-updates -u
+npm i
+npm ci
 npm run build
 cdk ls
 ```

@@ -8,6 +8,6 @@
 
 	"name_tag": {
 		"key":			"Name",
-		"value_prefix":	"sonar-"
+		"value_prefix":	"ecs-cicd-ref-"
 	}
 }

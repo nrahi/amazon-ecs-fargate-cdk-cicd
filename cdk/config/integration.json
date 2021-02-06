@@ -8,7 +8,7 @@
 
 	"env_tags": [
 		{"key":	"Environment", "value": "Integration"},
-		{"key":	"Schedule", "value": "12-hours-est"},
+		{"key":	"Schedule", "value": "none"},
 		{"key":	"ScheduleMessage", "value": "none"}
 	],
 

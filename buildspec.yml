@@ -1,0 +1,30 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo Entered the pre_build phase...
+      - env
+      - export TAG=${CODEBUILD_RESOLVED_SOURCE_VERSION}
+      - aws ecr get-login-password --region $REGION| docker login --username AWS --password-stdin $ACCOUNT.dkr.ecr.$REGION.amazonaws.com
+    finally:
+      - echo This always runs even if the pre_build command fails
+      - echo pre_build completed on `date`
+  build:
+    commands:
+      - echo Build started on `date`
+      - cd flask-docker-app
+      - docker build -t $FLASK_REPO_URI:$TAG .
+      - docker push $FLASK_REPO_URI:$TAG
+    finally:
+      - echo This always runs even if the build command fails
+      - echo Build completed on `date`
+  post_build:
+    commands:
+      - echo In post_build stage
+      - cd..
+      - printf '[{\"name\":\"flask-app\",\"imageUri\":\"%s\"}]' $FLASK_REPO_URI:$TAG > imagedefinitions.json
+      - pwd; ls -al; cat imagedefinitions.json
+artifacts:
+  files:
+    - imagedefinitions.json
