@@ -10,6 +10,8 @@ import codepipeline_actions = require('@aws-cdk/aws-codepipeline-actions');
 import { GateUParentStack, GateUParentStackProps } from "./common/gateu-parent-stack";
 import { DockerImageAsset } from '@aws-cdk/aws-ecr-assets';
 import * as path from 'path';
+import * as s3 from '@aws-cdk/aws-s3';
+import { pipeline_s3, containers } from '../config/common.json';
 
 export interface EcsCdkStackProps extends GateUParentStackProps {
 }
@@ -58,19 +60,21 @@ export class EcsCdkStack extends GateUParentStack {
 
     taskDef.addToExecutionRolePolicy(executionRolePolicy);
 
-    let containerName = 'flask-docker-app'
-    const asset = new DockerImageAsset(this, this.getNameFor(containerName), {
-      directory: path.join(__dirname, '../../', containerName)
-    });
-    
-    const container = taskDef.addContainer(containerName, {
-      image: ecs.ContainerImage.fromEcrRepository(asset.repository, asset.imageUri.split(":").pop()),
-      memoryLimitMiB: 256,
-      cpu: 256,
-      logging
-    });
+    let asset: DockerImageAsset;
+    let container: ecs.ContainerDefinition;
 
-    container.addPortMappings({containerPort: 5000});
+    for (let cont of containers) {  
+      asset = new DockerImageAsset(this, this.getNameFor(cont.name +'-asset'), {
+        directory: path.join(__dirname, '../../', cont.name)
+      });
+      container = taskDef.addContainer(cont.name, {
+        image: ecs.ContainerImage.fromEcrRepository(asset.repository, asset.imageUri.split(":").pop()),
+        memoryLimitMiB: 256,
+        cpu: 256,
+        logging
+      });
+      container.addPortMappings({containerPort: cont.port});
+    }
 
     const fargateService = new ecs_patterns.ApplicationLoadBalancedFargateService(this, this.getNameFor('ecs-service'), {
       serviceName: this.getNameFor('ecs-service'),
@@ -86,13 +90,25 @@ export class EcsCdkStack extends GateUParentStack {
       scaleOutCooldown: cdk.Duration.seconds(300)
     });
 
+    const ecrRepoMap: Map<string, ecr.IRepository> = new Map();
+    let aRepo: ecr.IRepository;
+
+    for (let cont of containers) {  
+      aRepo = new ecr.Repository(this, this.getNameFor(cont.name), {
+        repositoryName: cont.repo,
+        removalPolicy: cdk.RemovalPolicy.DESTROY,
+        imageScanOnPush: true,
+        lifecycleRules: [{ maxImageCount: 3 }]
+      });
+      ecrRepoMap.set(cont.name, aRepo);
+    }
+
     // ***PIPELINE CONSTRUCTS***
-    // ECR - repo
-    const ecrRepo = new ecr.Repository(this, this.getNameFor('repo'), {
-      repositoryName: 'ecs-cicd-ref/' + containerName,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-      imageScanOnPush: true,
-      lifecycleRules: [{ maxImageCount: 3 }]
+      //create atrifacts s3 bucket for pipeline
+    const artifactBucket = new s3.Bucket(this, this.getNameFor(pipeline_s3), {
+        bucketName: this.getNameFor(pipeline_s3),
+        encryption: s3.BucketEncryption.KMS_MANAGED,
+        blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL
     });
 
     const sourceOutput = new codepipeline.Artifact(this.getNameFor('source-output'));
@@ -117,12 +133,11 @@ export class EcsCdkStack extends GateUParentStack {
             value: `${cluster.clusterName}`
           },
           'FLASK_REPO_URI': {
-            value: `${ecrRepo.repositoryUri}`
+            value: `${ecrRepoMap.get("flask-docker-app")?.repositoryUri}`
           }
         }
       });
 
-      ecrRepo.grantPullPush(buildProject.role!)
       buildProject.addToRolePolicy(new iam.PolicyStatement({
         actions: [
           "ecs:DescribeCluster",
@@ -133,6 +148,10 @@ export class EcsCdkStack extends GateUParentStack {
           ],
         resources: [`${cluster.clusterArn}`],
       }));
+
+      for (var name in ecrRepoMap) {
+        ecrRepoMap.get(name)?.grantPullPush(buildProject.role!)
+      }
   
     // ***PIPELINE ACTIONS***
     const sourceAction = new codepipeline_actions.GitHubSourceAction({
@@ -163,7 +182,9 @@ export class EcsCdkStack extends GateUParentStack {
     });
 
     // PIPELINE STAGES
-    new codepipeline.Pipeline(this, 'MyECSPipeline', {
+    new codepipeline.Pipeline(this, this.getNameFor('pipeline'), {
+      pipelineName:   this.getNameFor("pipeline"),
+      artifactBucket: artifactBucket,
       stages: [
         {
           stageName: 'Source',

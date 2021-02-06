@@ -9,5 +9,11 @@
 	"name_tag": {
 		"key":			"Name",
 		"value_prefix":	"ecs-cicd-ref-"
-	}
+	},
+
+	"pipeline_s3": "pipeline-artifacts",
+
+	"containers": [
+		{"name": "flask-docker-app", "repo": "ecs-cicd-ref/flask-docker-app", "port": 5000 }
+	]
 }
