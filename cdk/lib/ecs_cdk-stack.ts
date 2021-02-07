@@ -149,8 +149,8 @@ export class EcsCdkStack extends GateUParentStack {
         resources: [`${cluster.clusterArn}`],
       }));
 
-      for (var name in ecrRepoMap) {
-        ecrRepoMap.get(name)?.grantPullPush(buildProject.role!)
+      for (let repo of ecrRepoMap.values()) {
+        repo.grantPullPush(buildProject.role!);
       }
   
     // ***PIPELINE ACTIONS***
